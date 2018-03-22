@@ -1,0 +1,56 @@
+#!/bin/bash
+# mikeyom@gmail.com 03-2018
+
+my_path=/root/scripts
+my_date_of_week=`date '+%u'`
+my_hour=`date '+%H'`
+
+if [ $my_hour -eq 0 ]; then
+   exit 0
+fi
+
+if [[ $my_date_of_week -lt 1 || $my_date_of_week -gt 5 ]]; then
+   exit 0
+fi
+
+my_file=$my_path/BOOK/06_ebook_file.txt
+
+my_link=`cat $my_path/BOOK/06_ebook_file.txt | head -n 1`
+my_to_read=`wc -l $my_file | awk '{print $1}'`
+my_total=`cat $my_path/BOOK/03_total_page.txt`
+my_finished=`cat $my_path/BOOK/02_current_page.txt | tail -n 1`
+
+new_finished=$(($my_finished + 1))
+echo "$new_finished" >> $my_path/BOOK/02_current_page.txt
+
+echo $(( $my_total - $new_finished )) > $my_path/BOOK/04_pages_to_read.txt
+my_pages_to_read=`cat $my_path/BOOK/04_pages_to_read.txt`
+
+my_week=$(( $my_pages_to_read / 50 ))
+my_remain=$(( $my_pages_to_read % 50 ))
+my_days=$(( $my_remain / 10 ))
+
+my_percent=`echo "$my_finished $my_total" | awk '{print $1/$2*100}'`
+echo "$my_link" > $my_path/BOOK/05_send_email.txt
+echo "" >> $my_path/BOOK/05_send_email.txt
+echo "$my_percent % Finished" >> $my_path/BOOK/05_send_email.txt
+echo "" >> $my_path/BOOK/05_send_email.txt
+echo "You are currently reading page: $new_finished" >> $my_path/BOOK/05_send_email.txt
+echo "" >> $my_path/BOOK/05_send_email.txt
+echo "The book total page is: $my_total" >> $my_path/BOOK/05_send_email.txt
+echo "" >> $my_path/BOOK/05_send_email.txt
+echo "Current inventory: $my_to_read" >> $my_path/BOOK/05_send_email.txt
+echo "" >> $my_path/BOOK/05_send_email.txt
+echo "You will finish this book in $my_week weeks and $my_days days" >> $my_path/BOOK/05_send_email.txt
+echo "" >> $my_path/BOOK/05_send_email.txt
+
+
+cat $my_path/BOOK/01_default_hr.txt | grep $my_hour > /dev/null
+my_test=$?
+
+if [ $my_test -eq 0 ]; then
+    mail -s "BOOK `date +%Y-%m-%H` $my_link" EMAIL < $my_path/BOOK/05_send_email.txt
+    sed '1d' $my_file > $my_path/BOOK/tmp_06_ebook_file.txt
+    mv $my_path/BOOK/tmp_06_ebook_file.txt $my_file
+
+fi
